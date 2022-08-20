@@ -2,7 +2,7 @@
 title: "Banking backend server with Golang(Done)"
 categories:
   - Server
-date: 2022-04-10 15:00:25 +0900
+date: 2022-04-23 15:00:25 +0900
 tags:
   - golang
   - backend
