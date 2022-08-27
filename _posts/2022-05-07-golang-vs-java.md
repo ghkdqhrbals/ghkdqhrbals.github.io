@@ -52,7 +52,7 @@ Golang is **1. better supports GC(Garbage Collection)** and **2. better supports
 * While Golang runs faster than Java, Java has more features and better support.
 
 ## Golang GC and JVM GC
-One advantage that we believe Go has over Java is that it gives you more control over memory layout. For example, a simple 2D graphics package might define:
+One advantage that we believe Go has over Java is that **it gives you more control over memory layout**. For example, a simple 2D graphics package might define:
 ```
 type Rect struct {
     Min Point
@@ -81,7 +81,19 @@ Control over memory layout may also be important for extracting performance from
 
 The collector in the current Go distributions is reasonable but by no means state of the art. We have plans to spend more effort improving it over the next year or two. To be clear, Go's garbage collector is certainly not as good as modern Java garbage collectors, but we believe it is easier in Go to write programs that don't need as much garbage collection to begin with, so the net effect can still be that garbage collection is less of an issue in a Go program than in an equivalent Java program.
 
+### Golang has Static GC
+Golang do not replace objects in heap. And that is one of the static GC's characteristic. However, static GC has issue that memory fragmentations occurs. 
+![static gc](../../assets/p/3/static_GC.png)
+> To handle that fragmentation issues, Golang use **TCMalloc**(Thread-Caching Malloc) for efficient memory management!
+{: .prompt-info}
 
+#### What is TCMalloc?
+
+
+### Java has Dynamic GC
+![dynamic gc](../../assets/p/3/dynamic_GC.png)
+
+* Also Java has adopted **aging system** for Garbage Collection.
 
 # Go Runtime vs Java Virtual Machine
 Does Go have a runtime?
