@@ -1,6 +1,8 @@
 ---
 title: "Golang vs Spring Native"
 categories:
+  - Server
+  - Comparison
   - Golang
 date: 2022-08-30 16:00:25 +0900
 tags:

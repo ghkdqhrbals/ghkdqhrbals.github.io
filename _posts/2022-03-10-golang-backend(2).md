@@ -1,6 +1,8 @@
 ---
 title: "Docker Setting"
 categories:
+  - Server
+  - Golang
   - Docker
 date: 2022-03-10 14:00:25 +0900
 tags:

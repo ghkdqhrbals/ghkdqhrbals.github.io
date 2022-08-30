@@ -1,6 +1,8 @@
 ---
 title: "Golang vs Java(Part.2)"
 categories:
+  - Server
+  - Comparison
   - Golang
 date: 2022-08-25 15:00:25 +0900
 tags:

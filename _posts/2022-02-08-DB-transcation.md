@@ -1,6 +1,8 @@
 ---
 title: "DB Transaction"
 categories:
+  - Server
+  - Golang
   - Database
 date: 2022-02-08 15:00:25 +0900
 tags:

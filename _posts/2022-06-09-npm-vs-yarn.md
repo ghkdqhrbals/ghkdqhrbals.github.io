@@ -2,6 +2,7 @@
 title: "NPM vs YARN, what is your favorite?"
 categories:
   - Server
+  - Comparison
 date: 2022-06-09 06:00:25 +0900
 tags:
   - package install

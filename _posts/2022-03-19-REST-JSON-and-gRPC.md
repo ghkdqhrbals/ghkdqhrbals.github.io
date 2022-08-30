@@ -2,6 +2,7 @@
 title: "REST, JSON RPC, and gRPC"
 categories:
   - Server
+  - Golang
 date: 2022-03-19 15:00:25 +0900
 tags:
   - RESTFUL
