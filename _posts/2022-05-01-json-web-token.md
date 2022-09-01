@@ -14,7 +14,7 @@ First we should know about the **cookie**.
 
 # Cookie
 
-Cookie is a database which is stored in client's web browser by server. Server can store data up to 4KB(this is different among the browsers). To maintain the state(as http is stateless protocol), cookie can be used as a temporary state. Also cookie can reduce resource comsumption of server.
+Cookie is a database which is stored in client's web browser by server. Server can store data up to 4KB(this is different among the browsers). To maintain the state(**as http is stateless protocol**), cookie can be used as a temporary state! Also cookie can reduce resource comsumption of server.
 
 This cookie data is key:value pair set. Each cookie data is stored according to its domain.
 
