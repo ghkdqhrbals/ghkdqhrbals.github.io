@@ -58,7 +58,148 @@ REST 방식의 API 구현은 **CRUD**(Create/Read/Update/Delete)에 초점이 �
 * 따라서 JSON-RPC는 High performance이며, Payload가 작다. 반면 서버 마음대로 표준을 생성하기에 다음의 **단점**이 존재한다.   
   1. 표준화를 할 수 없다.   
   2. 실제 function이 노출되는 위험이 존재한다(이는 거꾸로 말하면 API를 노출시키기 좋다라는 것임).       
- 
+
+### Example
+
+```go
+package main
+
+import (
+	"log"
+	"net/rpc"
+)
+
+// rpc client
+
+type Args struct{}
+
+func main() {
+
+	hostname := "localhost"
+	port := ":1122"
+
+	var reply string
+
+	args := Args{}
+
+	client, err := rpc.DialHTTP("tcp", hostname+port)
+	if err != nil {
+		log.Fatal("dialing: ", err)
+	}
+
+	// Call normally takes service name.function name, args and
+	// the address of the variable that hold the reply. Here we
+	// have no args in the demo therefore we can pass the empty
+	// args struct.
+	err = client.Call("Attack.Stop", args, &reply)
+	if err != nil {
+		log.Fatal("error", err)
+	}
+
+	// log the result
+	log.Printf("%s\n", reply)
+}
+```
+{: file="client.go"}
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"net"
+	"net/http"
+	"net/rpc"
+	"sync"
+	"time"
+)
+
+// an RPC server in Go
+
+type Args struct{}
+
+type Attack struct {
+	stop  chan bool
+	start chan bool
+	quit  chan bool
+}
+
+var nodeID string
+var total_packet int
+var N_value int
+var time_duration time.Time
+var attack_success bool
+
+func (a *Attack) Method_info() error {
+	for {
+		select {
+		case <-a.start:
+			fmt.Printf("Eclipse Attack start to %s\n", nodeID)
+
+		case <-a.stop:
+			fmt.Println("Stop attack")
+			fmt.Println("--------- Attack Results -------")
+			fmt.Printf("| Total Packet \t\t: %d\t|\n", total_packet)
+			fmt.Printf("| N value \t\t: %d\t\t|\n", N_value)
+			fmt.Printf("| Time \t\t\t: %s\t|\n", time_duration)
+			fmt.Printf("| Attack Success \t: %t\t\t|\n", attack_success)
+			fmt.Println("--------------------------------")
+
+		case <-a.quit:
+			fmt.Println("Exit Attack")
+			return nil
+		}
+	}
+
+}
+func (a *Attack) Start(args *Args, reply *string) error {
+	a.start <- true
+	*reply = "Start Attack Server"
+	return nil
+}
+
+func (a *Attack) Stop(args *Args, reply *string) error {
+	a.stop <- true
+	*reply = "Stop Attack Server"
+	return nil
+}
+func (a *Attack) Quit(args *Args, reply *string) error {
+	a.quit <- true
+	*reply = "Quit Attack Server"
+	return nil
+}
+func main() {
+	var wg sync.WaitGroup
+	attack := new(Attack)
+	rpc.Register(attack)
+	rpc.HandleHTTP()
+
+	attack.start = make(chan bool)
+	attack.stop = make(chan bool)
+	attack.quit = make(chan bool)
+
+	go func() {
+		defer wg.Done()
+		attack.Method_info()
+	}()
+
+	// set a port for the server
+	port := ":1122"
+
+	// listen for requests on 1122
+	listener, err := net.Listen("tcp", port)
+	if err != nil {
+		log.Fatal("listen error: ", err)
+	}
+
+	http.Serve(listener, nil)
+
+	wg.Wait()
+}
+```
+{: file="server.go"}
+
 -----------------
 
 ## gRPC
