@@ -43,5 +43,7 @@ Here is two container orchestration technology options, Docker-compose and Kuber
   * Kubernetes is a platform for managing containerized workloads and services, that facilitates both declarative configuration and automation
   > if you run your service in single host, you don't need to use kubernetes. But if you want to run your service in multiple-host and take leverage in automation, you can use Kubernetes for your convenience.
 
-# Reference
-[https://www.upguard.com/blog/docker-vs-vmware-how-do-they-stack-up](https://www.upguard.com/blog/docker-vs-vmware-how-do-they-stack-up)
+# References
+* [https://www.upguard.com/blog/docker-vs-vmware-how-do-they-stack-up](https://www.upguard.com/blog/docker-vs-vmware-how-do-they-stack-up)
+* [https://stackoverflow.com/questions/47536536/whats-the-difference-between-docker-compose-and-kubernetes](https://stackoverflow.com/questions/47536536/whats-the-difference-between-docker-compose-and-kubernetes)
+* [https://github.com/compose-spec/compose-spec/blob/master/spec.md](https://github.com/compose-spec/compose-spec/blob/master/spec.md)
