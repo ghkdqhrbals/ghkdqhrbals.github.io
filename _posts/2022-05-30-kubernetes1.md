@@ -35,13 +35,87 @@ Also Docker can gives you more advantages. Docker can run your application **(2)
 To summary, Docker has many advatages. But if you have many many containers, how can we manage all these containers?
 
 Here is two container orchestration technology options, Docker-compose and Kubernetes.
+> They both can manage cpu-usage, memory-usage, etc.
 
-* Docker-compose
+-------------------
+
+* **Docker-compose**
   * Docker Compose is a tool for defining and running multi-container Docker applications used in **single host**!
+  > I usally set my docker configuration with docker-compose. I use this in (1) portfolio project, (2) golang-backend project. My projects have features below. **You can check docker-compose setting in my other posting**.
+  > ![a](../../assets/p/6/2.png)
+  > ![a](../../assets/p/6/1.png)
 
-* Kubernetes
+```yaml
+services:
+  postgres:
+    image: postgres:12-alpine
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=simple_bank
+    ports:
+      - "5432:5432" # purpose to exposeing ports. Except this ports, you can use only inside services
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_SOURCE=postgresql://root:secret@postgres:5432/simple_bank?sslmode=disable
+    depends_on:
+      - postgres
+    entrypoint: ["/app/wait-for-it.sh","postgres:5432","--","/app/start.sh"]
+    command: ["/app/main"]
+```
+{: file='golang-backend/docker-compose.yaml'}
+
+```yaml
+version: "3.7"
+
+services:
+  nginx:
+    restart: always
+    container_name: nginx
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    networks:
+      - frontend
+      
+  client:
+    container_name: client
+    expose:
+      - "3000"
+    restart: "on-failure"
+    environment:
+      - PORT=3000
+      - NODE_ENV=development 
+      - CHOKIDAR_USEPOLLING=true
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    volumes:
+      - "./client/:/app"
+      - "/app/node_modules"
+    stdin_open: true
+    networks:
+      - frontend
+
+networks: 
+  frontend:
+    driver: bridge
+```
+{: file='portfolio/docker-compose.yaml'}
+
+-------------------
+
+* **Kubernetes**
   * Kubernetes is a platform for managing containerized workloads and services, that facilitates both declarative configuration and automation
   > if you run your service in single host, you don't need to use kubernetes. But if you want to run your service in multiple-host and take leverage in automation, you can use Kubernetes for your convenience.
+  > In case of mine, I dont need to work with many containers, I will use this later.
 
 # References
 * [https://www.upguard.com/blog/docker-vs-vmware-how-do-they-stack-up](https://www.upguard.com/blog/docker-vs-vmware-how-do-they-stack-up)
