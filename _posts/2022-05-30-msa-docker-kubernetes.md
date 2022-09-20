@@ -1,14 +1,15 @@
 ---
-title: "Relationship of MSA & Docker"
+title: "Relationship between MSA & Docker(proceeding)"
 categories:
   - Server
   - Docker
 date: 2022-05-30 15:00:25 +0900
+pin: true
 tags:
   - msa
 ---
 
-MSA rises as **cloud services** are more and more used. That's because each service is independent and can be managed its cost efficiently. Also, even without the benefits of cost in cloud service, MSA has advantage of scalability, fast dev., increased team autonomy etc.
+MSA rises as **cloud services** and is more and more used. That's because each service is independent and can be managed its cost efficiently. Also, even without the benefits of cost in cloud service, MSA has advantage of scalability, fast dev., increased team autonomy etc.
 
 As each service of MSA has their independent environments, **(1) Consistent environmental management(Portability)** is required. Docker solves this for you!
 
