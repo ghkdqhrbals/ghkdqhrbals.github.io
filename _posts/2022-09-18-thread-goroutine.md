@@ -1,5 +1,5 @@
 ---
-title: "Goroutine"
+title: "Goroutine structure and behavior"
 categories:
   - Server
   - Golang
@@ -36,7 +36,7 @@ Goroutine is M:N thread
 * `P`(Processor) : logical processor
   * has one `LRQ`
   * allocate `G` in `M`
-  * if System Call that block thread occured in `G`, re-allocate `G` into left `M`
+  * in case that if `G` access to locked resources, `G` should wait until that resource is unlocked. `P` re-allocate `G` into left `M`, so that wait in other thread
   > to show block is never happened
 * `LRQ`(Local run queue) : Run Queue
   * `P` pop `G` from its `LRQ` and allocate to `M`
