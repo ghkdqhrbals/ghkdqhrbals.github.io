@@ -46,13 +46,13 @@ Goroutine is M:N thread
 
 
 
-
 ### Memory usage
 * goroutine
-  * need **2KB stack**
+  * need **2KB stack**   
   > as `G` only need SP, PC, DX
 * thread(Java)
-  * need more than **1MB stack**
+  * need more than **1MB stack**   
+  > (i.e. 16 general purpose registers, PC, SP, segment registers etc.)
  
 ### Context Switch
 * goroutine
