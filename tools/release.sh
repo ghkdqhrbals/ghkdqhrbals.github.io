@@ -27,8 +27,8 @@ GEM_SPEC="jekyll-theme-chirpy.gemspec"
 NODE_CONFIG="package.json"
 
 FILES=(
-  "../_sass/jekyll-theme-chirpy.scss"
-  "../_javascript/copyright"
+  "_sass/jekyll-theme-chirpy.scss"
+  "_javascript/copyright"
   "$GEM_SPEC"
   "$NODE_CONFIG"
 )
