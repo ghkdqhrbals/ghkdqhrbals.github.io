@@ -23,7 +23,7 @@
   {% assign update_list = update_list | push: entry %}
 {% endfor %}
 
-{% if update_list.size > 0 %}
+{% comment %} {% if update_list.size > 0 %}
 
   <div id="access-lastmod" class="post">
     <div class="panel-heading">{{- site.data.locales[lang].panel.lastmod -}}</div>
@@ -37,4 +37,4 @@
     </ul>
   </div> <!-- #access-lastmod -->
 
-{% endif %}
+{% endif %} {% endcomment %}

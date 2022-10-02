@@ -94,9 +94,9 @@ img {
 }
 
 blockquote {
-  border-left: 5px solid var(--blockquote-border-color);
+  border-left: 5px solid rgb(0, 155, 8);
   padding-left: 1rem;
-  color: var(--blockquote-text-color);
+  color: #8f7900;
 
   &[class^="prompt-"] {
     display: flex;
