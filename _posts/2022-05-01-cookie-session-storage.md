@@ -1,5 +1,5 @@
 ---
-title: "JWT(Json Web Token)"
+title: "Cookie and Session, JWT(Json Web Token)"
 categories:
   - Server
   - Session/Token
