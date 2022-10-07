@@ -1,8 +1,7 @@
 ---
 title: "DB Transaction"
 categories:
-  - Server
-  - Golang
+  - Computer Science Background
   - Database
 date: 2022-02-08 15:00:25 +0900
 tags:
@@ -10,6 +9,7 @@ tags:
   - golang
   - postgres
 ---
+
 # What is Database Transaction?
 * It refers to the unit of work performed by changing the state of the database.
 * Simply put, it means accessing the database using the following query(SELECT, UPDATE, DELETE, ALTER, etc.).
@@ -21,10 +21,10 @@ tags:
 
 # ACID(Atomicity, Consistency, Isolation, Durability)
 Transaction has 4 characters.
-* Atomicity : Whether all transactions are reflected in the database or not at all(all or none).
-* Consistency : The result of transaction processing should always be consistent. When we access to value in database, even if that value is updated, the operation must be performed with the value initially referenced.
-* Isolation : If one transaction perform calculation in specific value, other transaction can not access to that value.
-* Durability : When transaction is done successfully, results must be reflected to database.
+* **Atomicity** : Whether all transactions are reflected in the database or not at all(all or none).
+* **Consistency** : The result of transaction processing should always be consistent. When we access to value in database, even if that value is updated, the operation must be performed with the value initially referenced.
+* **Isolation** : If one transaction perform calculation in specific value, other transaction can not access to that value.
+* **Durability** : When transaction is done successfully, results must be reflected to database.
 
 > Transaction use callback and rollback to maintain 4 characters.
 

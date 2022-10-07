@@ -1,8 +1,8 @@
 ---
 title: "Cookie and Session, JWT(Json Web Token)"
 categories:
-  - Server
-  - Session/Token
+  - Computer Science Background
+  - Network
 date: 2022-05-01 20:00:25 +0900
 tags:
   - token
@@ -76,3 +76,4 @@ It seems that token based authentication is very simple and low cost. However, t
 * Set "alg" header to "HS256" while server verify token with RSA public key(RS256)
   * HASH(header,
   * you must!! check the "alg" in header
+
