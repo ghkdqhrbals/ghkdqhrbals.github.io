@@ -1,7 +1,7 @@
 ---
 title: "Advatage of MSA(Micro Service Architecture)"
 categories:
-  - Server
+  - 서버
   - MSA
 date: 2022-09-05 16:00:25 +0900
 tags:

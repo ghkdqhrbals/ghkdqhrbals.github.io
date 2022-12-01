@@ -2,6 +2,8 @@
   The Side Bar
 -->
 
+
+
 <div id="sidebar" class="d-flex flex-column align-items-end">
   <div class="profile-wrapper text-center">
     <div id="avatar">
@@ -46,6 +48,7 @@
 
         <span>{{ site.data.locales[lang].tabs.[tab_name] | default: tab.title | upcase }}</span>
       </a>
+
     </li> <!-- .nav-item -->
     {% endfor %}
 
@@ -53,7 +56,7 @@
 
   <div class="sidebar-bottom mt-auto d-flex flex-wrap justify-content-center align-items-center">
 
-    
+
 
     {% for entry in site.data.contact %}
       {% capture url %}

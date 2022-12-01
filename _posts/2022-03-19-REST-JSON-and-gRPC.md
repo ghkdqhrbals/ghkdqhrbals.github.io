@@ -1,7 +1,7 @@
 ---
 title: "REST, JSON RPC, and gRPC"
 categories:
-  - Server
+  - 서버
   - Golang
 date: 2022-03-19 15:00:25 +0900
 tags:

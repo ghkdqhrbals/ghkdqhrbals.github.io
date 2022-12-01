@@ -1,7 +1,7 @@
 ---
 title: "Goroutine structure and behavior"
 categories:
-  - Server
+  - 서버
   - Golang
 date: 2022-09-18 15:00:25 +0900
 tags:

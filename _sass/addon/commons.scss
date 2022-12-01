@@ -95,8 +95,9 @@ img {
 
 blockquote {
   border-left: 5px solid rgb(0, 155, 8);
+  background-color: #3b3b3b;
   padding-left: 1rem;
-  color: #8f7900;
+  color: #b6bbc7;
 
   &[class^="prompt-"] {
     display: flex;
@@ -430,7 +431,7 @@ img[data-src] {
 .post-meta {
   font-size: 0.85rem;
   word-spacing: 1px;
-  
+
 
   a {
     &:not(:last-child) {

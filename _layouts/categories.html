@@ -46,25 +46,11 @@ layout: page
         {% assign top_posts_size = site.categories[category_name] | size %}
         <span class="text-muted small font-weight-light">
           {% if sub_categories_size > 0 %}
-            {{ sub_categories_size }}
-            {% if sub_categories_size > 1 %}
-              {{ site.data.locales[lang].categories.category_measure.plural
-                | default: site.data.locales[lang].categories.category_measure }}
-            {% else %}
-              {{ site.data.locales[lang].categories.category_measure.singular
-                | default: site.data.locales[lang].categories.category_measure }}
-            {% endif %},
+            CATEGORY({{ sub_categories_size }})----            
           {% endif %}
 
-          {{ top_posts_size }}
+          POSTING({{ top_posts_size }})
 
-          {% if top_posts_size > 1 %}
-            {{ site.data.locales[lang].categories.post_measure.plural
-              | default: site.data.locales[lang].categories.post_measure }}
-          {% else %}
-            {{ site.data.locales[lang].categories.post_measure.singular
-              | default: site.data.locales[lang].categories.post_measure }}
-          {% endif %}
         </span>
       </span>
 
@@ -101,7 +87,7 @@ layout: page
               <ul class="post-content pl-0">
                 {% for post in posts_list %}
                 <li class="d-flex pl-md-3 pr-md-3">
-                  <a href="{{ post.url | relative_url }}"> > {{ post.title }}</a>
+                  <a href="{{ post.url | relative_url }}">  {{ post.title }}</a>
                 </li>
                 {% endfor %}
               </ul>

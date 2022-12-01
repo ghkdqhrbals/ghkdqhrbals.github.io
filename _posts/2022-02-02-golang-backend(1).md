@@ -1,9 +1,8 @@
 ---
 title: "How can we generate golang interface from SQL queries?"
 categories:
-  - Server
+  - 서버
   - Golang
-  - Database
 date: 2022-02-02 06:00:25 +0900
 tags:
   - golang

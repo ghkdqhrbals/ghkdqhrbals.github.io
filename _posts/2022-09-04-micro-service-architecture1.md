@@ -1,8 +1,8 @@
 ---
 title: "Saga Architecture Pattern"
 categories:
-  - Server
-  - Saga
+  - 서버
+  - MSA
 date: 2022-09-04 16:00:25 +0900
 tags:
   - saga

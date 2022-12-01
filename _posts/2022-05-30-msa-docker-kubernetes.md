@@ -1,10 +1,9 @@
 ---
 title: "Relationship between MSA & Docker(proceeding)"
 categories:
-  - Server
+  - 서버
   - Docker
 date: 2022-05-30 15:00:25 +0900
-pin: true
 tags:
   - msa
 ---
@@ -13,24 +12,24 @@ MSA rises as **cloud services** and is more and more used. That's because each s
 
 As each service of MSA has their independent environments, **(1) Consistent environmental management(Portability)** is required. Docker solves this for you!
 
-> * VM : complicate   
-> for example, just in case you want to upgrade the version of your program. With VM, you need to pull from registry, update all configuration files, reset environments, etc. So it is very hard to change or update your program    
-> * Docker : easy    
+> * VM : complicate
+> for example, just in case you want to upgrade the version of your program. With VM, you need to pull from registry, update all configuration files, reset environments, etc. So it is very hard to change or update your program
+> * Docker : easy
 > Docker can simplify this process. Download image, run it!
 
 Also Docker can gives you more advantages. Docker can run your application **(2) fast in Provisioning & starting**, **(3) light-weight** than VM. This is because Docker based on OS-level process isolation rather than hardware virtualization(VM).
 
 
 > ![a](../../assets/p/6/Docker_VM.png)
-> containers provide OS-level process isolation whereas virtual machines offer isolation at the hardware abstraction layer (i.e., hardware virtualization).  So in IaaS use cases machine virtualization is an ideal fit, while containers are best suited for packaging/shipping portable and modular software    
+> containers provide OS-level process isolation whereas virtual machines offer isolation at the hardware abstraction layer (i.e., hardware virtualization).  So in IaaS use cases machine virtualization is an ideal fit, while containers are best suited for packaging/shipping portable and modular software
 > reference : [**https://www.upguard.com/blog/docker-vs-vmware-how-do-they-stack-up**](https://www.upguard.com/blog/docker-vs-vmware-how-do-they-stack-up)
 {: .prompt-info}
 
 > for example, if you want to input 'hellow world' in your Golang program.
-> 
-> * **VM** first seperate hardware space in your Host and install GuestOS(which is very big size). Next install Golang compiler, run program, I/O execution. At this time, there is transition between GuestOS and HostOS by its I/O driver.    
-> * **Docker** only install in container with bin/lib files that needed for executing program(unlike VM need whole OS which is very big size). That means Docker has light-weight. Also container and HostOS share some parts of kernel which don't need I/O translation. Thus, speed of Docker is more faster than VM.   
-> 
+>
+> * **VM** first seperate hardware space in your Host and install GuestOS(which is very big size). Next install Golang compiler, run program, I/O execution. At this time, there is transition between GuestOS and HostOS by its I/O driver.
+> * **Docker** only install in container with bin/lib files that needed for executing program(unlike VM need whole OS which is very big size). That means Docker has light-weight. Also container and HostOS share some parts of kernel which don't need I/O translation. Thus, speed of Docker is more faster than VM.
+>
 > Details in my posting : '**Docker vs Virtual Machine**'
 
 To summary, Docker has many advatages. But if you have many many containers, how can we manage all these containers?
@@ -85,7 +84,7 @@ services:
       - "80:80"
     networks:
       - frontend
-      
+
   client:
     container_name: client
     expose:
@@ -93,7 +92,7 @@ services:
     restart: "on-failure"
     environment:
       - PORT=3000
-      - NODE_ENV=development 
+      - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true
     build:
       context: ./client
@@ -105,7 +104,7 @@ services:
     networks:
       - frontend
 
-networks: 
+networks:
   frontend:
     driver: bridge
 ```
@@ -124,27 +123,27 @@ Now, I will explain each components.
 
 ## Components
 
-* `Cluster`   
+* `Cluster`
 : `Cluster` is a set of `Controll Plane` and one or more `Worker Node`.
-  * `Controll Plane`   
+  * `Controll Plane`
   : also called `Master Node`. And it manages the `Worker Node`s and the `Pod`s in the cluster.
-    * `API server`   
+    * `API server`
     : entry point for REST/kubectl
-    * `Scheduler`   
+    * `Scheduler`
     : schedules pods to worker nodes
-    * `Controll Manager`   
+    * `Controll Manager`
     : it manages and watches their current state of `Worker Node`, `Pod`
-    * `etcd`(key-value store)    
+    * `etcd`(key-value store)
     : stores all of Kubernetes cluster data(cluster state and config)
   * `Worker Node`
   :maintain running `Pod` and provide the Kubernetes runtime environment
-    * `kubelet`    
-    : It makes sure that containers are running in a Pod and they are healthy    
+    * `kubelet`
+    : It makes sure that containers are running in a Pod and they are healthy
     : Path between API server of `Controll Plane`
-    * `kube-proxy`     
-    : manages IP translation and routing    
+    * `kube-proxy`
+    : manages IP translation and routing
     : It facilitating Kubernetes networking services and load-balancing across all pods in a service
-    * `Container runtime`       
+    * `Container runtime`
     : It pulls images from `Container Registry` and starts and stops containers
     > `Container Registry` : can be `Docker Hub`, `Amazon Elastic Container Registry(ECR)`, `Google Container Registry(GCR)`
 
@@ -192,9 +191,9 @@ spec:
 * spec : details of components
   * replicas : set the number of `pod`
   * selector : what will deployment want to replicate(**find in `template`**)
-  * template.spec.container :    
-    (1) find `ghkdqhrbals/simplebank:latest` Docker images from **Docker Hub**,     
-    (2) run container with name `golang-backend-api`,     
+  * template.spec.container :
+    (1) find `ghkdqhrbals/simplebank:latest` Docker images from **Docker Hub**,
+    (2) run container with name `golang-backend-api`,
     (3) set container port `8080`
 
 ### Service

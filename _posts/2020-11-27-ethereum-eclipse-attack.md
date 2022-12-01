@@ -1,8 +1,8 @@
 ---
 title: "Eclipse Attack in Geth v1.6.6"
 categories:
-  - Blockchain
-  - Ethereum
+  - 블록체인
+  - 이더리움
 date: 2020-11-27 15:00:25 +0900
 tags:
   - Network

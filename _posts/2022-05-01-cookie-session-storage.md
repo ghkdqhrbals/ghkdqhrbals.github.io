@@ -1,8 +1,8 @@
 ---
 title: "Cookie and Session, JWT(Json Web Token)"
 categories:
-  - Computer Science Background
-  - Network
+  - CS
+  - 네트워크
 date: 2022-05-01 20:00:25 +0900
 tags:
   - token

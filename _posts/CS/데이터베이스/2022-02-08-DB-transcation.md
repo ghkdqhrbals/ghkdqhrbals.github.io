@@ -1,8 +1,8 @@
 ---
-title: "DB Transaction"
+title: "Database-Transaction"
 categories:
-  - Computer Science Background
-  - Database
+  - CS
+  - 데이터베이스
 date: 2022-02-08 15:00:25 +0900
 tags:
   - database
