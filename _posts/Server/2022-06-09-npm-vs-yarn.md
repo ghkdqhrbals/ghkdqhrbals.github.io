@@ -10,41 +10,41 @@ tags:
   - yarn
 ---
 
-To make portfolio in Web service, I complete task as below.   
+To make portfolio in Web service, I complete task as below.
 1.  Set portfolio frontend(React) and create Dockerfile
 2.  Set Nginx configuration
 3.  Set docker-compose. react-web(expose 3000), nginx(80:80)
 4.  Associate AWS EC2 instance static IP with AWS-route-53 domain
 
-I installed react packages with npm. However the speed was so slow.   
+I installed react packages with npm. However the speed was so slow.
 So, while looking for alternatives, there was the following data that comparatively analyzed **NPM** and **YARN**.
 
 
 
 > #### Yarn vs. NPM: How to Choose?
-> It's essential to consider the advantages and disadvantages of both NPM and Yarn when deciding which one to use.   
+> It's essential to consider the advantages and disadvantages of both NPM and Yarn when deciding which one to use.
 > ### [Yarn]
-> **Advantages**   
-> * Supports **parallel installation** and **Zero installs**, both of which dramatically increase performance.   
-> * Newer versions of Yarn offer a more secure form of version locking.   
+> **Advantages**
+> * Supports **parallel installation** and **Zero installs**, both of which dramatically increase performance.
+> * Newer versions of Yarn offer a more secure form of version locking.
 > * Active user community.
-> 
-> **Disadvantages**   
+>
+> **Disadvantages**
 > * Yarn doesn't work with Node.js versions older than version 5.
 > * Yarn has shown problems when trying to install native modules.
-> 
+>
 > ### [NPM]
-> 
+>
 > **Advantages**
-> 
-> * Easy to use, especially for developers used to the workflow of older versions.   
-> * Local package installation is optimized to save hard drive space.   
-> The simple UI helps reduce development time.   
-> 
-> **Disadvantages**    
-> * The online NPM registry can become unreliable in case of performance issues. This also means that NPM requires network access to install packages from the registry.   
-> * Despite a series of improvements across different versions, there are still security vulnerabilities when installing packages.   
-> * Command output can be difficult to read.   
+>
+> * Easy to use, especially for developers used to the workflow of older versions.
+> * Local package installation is optimized to save hard drive space.
+> The simple UI helps reduce development time.
+>
+> **Disadvantages**
+> * The online NPM registry can become unreliable in case of performance issues. This also means that NPM requires network access to install packages from the registry.
+> * Despite a series of improvements across different versions, there are still security vulnerabilities when installing packages.
+> * Command output can be difficult to read.
 {: .prompt-info }
 
 
@@ -77,12 +77,12 @@ FROM node:18-alpine3.16
 RUN mkdir /app
 WORKDIR /app
 
-ENV PATH /app/node_modules/.bin:$PATH 
+ENV PATH /app/node_modules/.bin:$PATH
 
 COPY package.json /app/package.json
 COPY yarn.lock /app/yarn.lock
-RUN yarn install 
-COPY . /app 
+RUN yarn install
+COPY ../.. /app
 
 CMD ["/app/start.sh"]
 COPY .env /app/.env
