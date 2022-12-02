@@ -32,8 +32,12 @@ body {
   line-height: 1.75rem;
   background: var(--body-bg);
   color: var(--text-color);
-  -webkit-font-smoothing: antialiased;
-  font-family: 'Source Sans Pro', 'Microsoft Yahei', sans-serif;
+  //-webkit-font-smoothing: antialiased;
+  //font-family: 'Source Sans Pro', 'Microsoft Yahei', sans-serif;
+  strong{
+    color: #fcda86;
+    font-weight: normal;
+  }
 }
 
 /* --- Typography --- */
