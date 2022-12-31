@@ -95,6 +95,7 @@ curl -XGET "question,answer/_search" -H 'Content-Type:application/json' -d
 
 ### 2. Type을 그대로 필드에 직접 추가하는 방법(customType)
 * 기존 Type으로 부모관계를 설정할 때
+
 ```
 PUT my_index
 {
@@ -204,6 +205,7 @@ GET my_index/_search
 * 높은 비정형 데이터 색인 효율성
 
 > 예로 우리가 `HB`라는 단어를 포함하는 row를 뽑고싶다라고 했을 때, RDB는 모든 row를 다 뽑아서 특정단어포함여부를 따로 전부 확인해야한다. 즉, 긴 텍스트(비정형 데이터)를 색인하고 검색하는것이 힘들다. 하지만, ES는 다음과 같이 비정형 데이터를 검색할 수 있다.
+>
 > ```
 > curl -XGET "http://localhost:9200/my_index/_search"
 > {
