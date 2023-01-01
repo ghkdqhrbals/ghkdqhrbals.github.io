@@ -6,23 +6,23 @@
   /* Framework color */
   --body-bg: var(--main-bg);
   --mask-bg: rgb(68, 69, 70);
-  --main-bg: rgb(40, 40, 40);
+  --main-bg: rgb(255 255 255);
   --main-border-color: rgb(44, 45, 45);
 
   /* Common color */
-  --text-color: rgb(204, 204, 204);
+  --text-color: rgb(59 59 59);
   --text-muted-color: rgb(107, 116, 124);
-  --heading-color: #ffffff;
+  --heading-color: #2f9800;
   --blockquote-border-color: rgb(66, 66, 66);
   --blockquote-text-color: rgb(117, 117, 117);
-  --link-color: rgb(138, 180, 248);
+  --link-color: rgb(197, 197, 197);
   --link-underline-color: rgb(82, 108, 150);
   --button-bg: rgb(39, 40, 43);
   --btn-border-color: rgb(63, 65, 68);
   --btn-backtotop-color: var(--text-color);
   --btn-backtotop-border-color: var(--btn-border-color);
   --btn-box-shadow: var(--main-bg);
-  --card-header-bg: rgb(51, 50, 50);
+  --card-header-bg: rgb(255, 255, 255);
   --label-color: rgb(108, 117, 125);
   --checkbox-color: rgb(118 120 121);
   --checkbox-checked-color: var(--link-color);
@@ -43,7 +43,7 @@
   --input-focus-border-color: rgb(112, 114, 115);
 
   /* Home page */
-  --post-list-text-color: rgb(175, 176, 177);
+  --post-list-text-color: rgb(129, 129, 129);
   --btn-patinator-text-color: var(--text-color);
   --btn-paginator-hover-color: rgb(64, 65, 66);
   --btn-paginator-border-color: var(--btn-border-color);
@@ -55,15 +55,15 @@
   --toc-highlight: rgb(116, 178, 243);
   --tag-bg: rgb(41, 40, 40);
   --tag-hover: rgb(43, 56, 62);
-  --tb-odd-bg: rgba(42, 47, 53, 0.52); /* odd rows of the posts' table */
-  --tb-even-bg: rgb(31, 31, 34); /* even rows of the posts' table */
+  --tb-odd-bg: rgb(201, 201, 201); /* odd rows of the posts' table */
+  --tb-even-bg: rgb(171, 171, 171); /* even rows of the posts' table */
   --tb-border-color: var(--tb-odd-bg);
   --footnote-target-bg: rgb(63, 81, 181);
   --btn-share-color: #6c757d;
   --btn-share-hover-color: #bfc1ca;
   --relate-post-date: var(--text-muted-color);
-  --card-bg: rgb(39, 40, 43);
-  --card-border-color: rgb(53, 53, 60);
+  --card-bg: rgb(224, 224, 224);
+  --card-border-color: rgb(224, 224, 224);
   --card-box-shadow: var(--main-bg);
   --preview-img-bg: radial-gradient(circle, rgb(22 22 24) 0%, rgb(32 32 32) 100%);
   --kbd-wrap-color: #6a6a6a;
@@ -140,11 +140,8 @@
     background-image:
       linear-gradient(
           to left,
-          rgb(26, 26, 30),
-          rgb(39, 39, 45),
-          rgb(39, 39, 45),
-          rgb(39, 39, 45),
-          rgb(26, 26, 30)
+          rgb(255, 255, 255),
+          rgb(231, 231, 231)
       );
   }
 

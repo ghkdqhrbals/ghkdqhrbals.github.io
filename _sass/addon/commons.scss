@@ -35,8 +35,8 @@ body {
   //-webkit-font-smoothing: antialiased;
   //font-family: 'Source Sans Pro', 'Microsoft Yahei', sans-serif;
   strong{
-    color: #ffd776;
-    font-weight: normal;
+    color: #9d7100;
+    font-weight: bold;
   }
 }
 
@@ -88,9 +88,7 @@ ul {
   }
 }
 
-a {
-  @extend %link-color;
-}
+
 
 img {
   max-width: 100%;
@@ -103,6 +101,20 @@ blockquote {
   padding-left: 1rem;
   padding-right: 1rem;
   color: #b6bbc7;
+  strong{
+    color: #ffbe1a;
+    font-weight: bold;
+  }
+
+  a {
+    color: #768dff;
+
+    &:hover {
+      @extend %link-hover;
+
+      @include no-text-decoration;
+    }
+  }
 
   &[class^="prompt-"] {
     display: flex;
@@ -538,6 +550,7 @@ img[data-src] {
   padding: 0 0.4rem;
   color: inherit;
   line-height: 1.3rem;
+
 
   &:not(:last-child) {
     margin-right: 0.2rem;
@@ -986,6 +999,8 @@ $sidebar-display: "sidebar-display";
   }
 
   .post-tag {
+    color: #2a408e;
+
     display: inline-block;
     line-height: 1rem;
     font-size: 1rem;
@@ -999,8 +1014,6 @@ $sidebar-display: "sidebar-display";
       color: var(--text-muted-color);
       padding-right: 0.2rem;
     }
-
-    @extend %link-color;
   }
 }
 
@@ -1012,7 +1025,7 @@ $sidebar-display: "sidebar-display";
       @extend %link-hover;
     }
 
-    @extend %link-color;
+
     @extend %no-bottom-border;
     @extend %heading;
 
