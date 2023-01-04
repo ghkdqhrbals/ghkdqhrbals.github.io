@@ -1,8 +1,7 @@
 ---
 title: "Elastic Search 심화(2)-ELK"
 categories:
-  - 프로젝트
-  - Spring
+  - Elastic Search
 date: 2023-01-02 09:00:25 +0900
 tags:
 ---

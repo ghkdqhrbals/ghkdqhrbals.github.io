@@ -1,8 +1,7 @@
 ---
 title: "Elastic Search의 개념 및 RDB와의 차이점"
 categories:
-  - 프로젝트
-  - Spring
+  - Elastic Search
 date: 2022-12-31 09:00:25 +0900
 tags:
 ---
