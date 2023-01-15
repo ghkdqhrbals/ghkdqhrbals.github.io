@@ -69,7 +69,7 @@ layout: page
     <div id="{{ LIST_PREFIX }}{{ group_index }}" class="collapse" aria-expanded="true">
       <ul class="list-group">
         {% for sub_category in sub_categories %}
-        <li class="list-group-item">
+        <li class="list-group-item" style="background-color: #cccccc">
           <i class="far fa-folder fa-fw"></i>
 
           {% capture _sub_ctg_url %}/categories/{{ sub_category | slugify | url_encode }}/{% endcapture %}
