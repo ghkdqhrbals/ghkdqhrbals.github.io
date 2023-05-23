@@ -1,0 +1,555 @@
+<!DOCTYPE html><html lang="ko-KR" ><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="generator" content="Jekyll v4.3.2" /><meta property="og:title" content="실시간 채팅방 구현(9) - (단방향 DB Sync with Kafka connector)" /><meta property="og:locale" content="ko_KR" /><meta name="description" content="INDEX DB sync 시 고려할점 어떻게 두 개의 master DB를 sync 해야할까? Kafka connector란? Kafka Source connector setting postgres wal_level 설정 debezium connector 설정(source) connector kafka 등록(schema configuration) DB에 값 추가했을 때 실제로 Kafka로 흘러가는지 확인 Kafka Sink connector setting postgres-kafka-source-connector 컨테이너 실행 jdbc-connector 설치 및 삽입 sink-connector configuration uni-directional DB sink 결과" /><meta property="og:description" content="INDEX DB sync 시 고려할점 어떻게 두 개의 master DB를 sync 해야할까? Kafka connector란? Kafka Source connector setting postgres wal_level 설정 debezium connector 설정(source) connector kafka 등록(schema configuration) DB에 값 추가했을 때 실제로 Kafka로 흘러가는지 확인 Kafka Sink connector setting postgres-kafka-source-connector 컨테이너 실행 jdbc-connector 설치 및 삽입 sink-connector configuration uni-directional DB sink 결과" /><link rel="canonical" href="/posts/chatting(9)/" /><meta property="og:url" content="/posts/chatting(9)/" /><meta property="og:site_name" content="Austin" /><meta property="og:type" content="article" /><meta property="article:published_time" content="2023-01-04T00:00:25+00:00" /><meta name="twitter:card" content="summary" /><meta property="twitter:title" content="실시간 채팅방 구현(9) - (단방향 DB Sync with Kafka connector)" /><meta name="twitter:site" content="@ghkdqhrbals" /> <script type="application/ld+json"> {"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2023-01-29T08:19:41+00:00","datePublished":"2023-01-04T00:00:25+00:00","description":"INDEX DB sync 시 고려할점 어떻게 두 개의 master DB를 sync 해야할까? Kafka connector란? Kafka Source connector setting postgres wal_level 설정 debezium connector 설정(source) connector kafka 등록(schema configuration) DB에 값 추가했을 때 실제로 Kafka로 흘러가는지 확인 Kafka Sink connector setting postgres-kafka-source-connector 컨테이너 실행 jdbc-connector 설치 및 삽입 sink-connector configuration uni-directional DB sink 결과","headline":"실시간 채팅방 구현(9) - (단방향 DB Sync with Kafka connector)","mainEntityOfPage":{"@type":"WebPage","@id":"/posts/chatting(9)/"},"url":"/posts/chatting(9)/"}</script><title>실시간 채팅방 구현(9) - (단방향 DB Sync with Kafka connector) | Austin</title><link rel="apple-touch-icon" sizes="180x180" href="/assets/img/favicons/apple-touch-icon.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicons/favicon-32x32.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/img/favicons/favicon-16x16.png"><link rel="manifest" href="/assets/img/favicons/site.webmanifest"><link rel="shortcut icon" href="/assets/img/favicons/favicon.ico"><meta name="apple-mobile-web-app-title" content="Austin"><meta name="application-name" content="Austin"><meta name="msapplication-TileColor" content="#da532c"><meta name="msapplication-config" content="/assets/img/favicons/browserconfig.xml"><meta name="theme-color" content="#ffffff"><link rel="preconnect" href="https://fonts.googleapis.com" ><link rel="dns-prefetch" href="https://fonts.googleapis.com" ><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="dns-prefetch" href="https://fonts.gstatic.com" crossorigin><link rel="preconnect" href="https://fonts.googleapis.com" ><link rel="dns-prefetch" href="https://fonts.googleapis.com" ><link rel="preconnect" href="https://cdn.jsdelivr.net" ><link rel="dns-prefetch" href="https://cdn.jsdelivr.net" ><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato&family=Source+Sans+Pro:wght@400;600;700;900&display=swap"><link rel="preconnect" href="https://www.google-analytics.com" crossorigin="use-credentials"><link rel="dns-prefetch" href="https://www.google-analytics.com"><link rel="preconnect" href="https://www.googletagmanager.com" crossorigin="anonymous"><link rel="dns-prefetch" href="https://www.googletagmanager.com"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.11.2/css/all.min.css"><link rel="stylesheet" href="/assets/css/style.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@1.0.1/dist/bootstrap-toc.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/magnific-popup@1/dist/magnific-popup.min.css"> <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script> <script type="text/javascript"> class ModeToggle { static get MODE_KEY() { return "mode"; } static get MODE_ATTR() { return "data-mode"; } static get DARK_MODE() { return "dark"; } static get LIGHT_MODE() { return "light"; } static get ID() { return "mode-toggle"; } constructor() { if (this.hasMode) { if (this.isDarkMode) { if (!this.isSysDarkPrefer) { this.setDark(); } } else { if (this.isSysDarkPrefer) { this.setLight(); } } } let self = this; /* always follow the system prefers */ this.sysDarkPrefers.addEventListener("change", () => { if (self.hasMode) { if (self.isDarkMode) { if (!self.isSysDarkPrefer) { self.setDark(); } } else { if (self.isSysDarkPrefer) { self.setLight(); } } self.clearMode(); } self.notify(); }); } /* constructor() */ get sysDarkPrefers() { return window.matchMedia("(prefers-color-scheme: dark)"); } get isSysDarkPrefer() { return this.sysDarkPrefers.matches; } get isDarkMode() { return this.mode === ModeToggle.DARK_MODE; } get isLightMode() { return this.mode === ModeToggle.LIGHT_MODE; } get hasMode() { return this.mode != null; } get mode() { return sessionStorage.getItem(ModeToggle.MODE_KEY); } /* get the current mode on screen */ get modeStatus() { if (this.isDarkMode || (!this.hasMode && this.isSysDarkPrefer)) { return ModeToggle.DARK_MODE; } else { return ModeToggle.LIGHT_MODE; } } setDark() { $('html').attr(ModeToggle.MODE_ATTR, ModeToggle.DARK_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.DARK_MODE); } setLight() { $('html').attr(ModeToggle.MODE_ATTR, ModeToggle.LIGHT_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.LIGHT_MODE); } clearMode() { $('html').removeAttr(ModeToggle.MODE_ATTR); sessionStorage.removeItem(ModeToggle.MODE_KEY); } /* Notify another plugins that the theme mode has changed */ notify() { window.postMessage({ direction: ModeToggle.ID, message: this.modeStatus }, "*"); } } /* ModeToggle */ const toggle = new ModeToggle(); function flipMode() { if (toggle.hasMode) { if (toggle.isSysDarkPrefer) { if (toggle.isLightMode) { toggle.clearMode(); } else { toggle.setLight(); } } else { if (toggle.isDarkMode) { toggle.clearMode(); } else { toggle.setDark(); } } } else { if (toggle.isSysDarkPrefer) { toggle.setLight(); } else { toggle.setDark(); } } toggle.notify(); } /* flipMode() */ </script><body data-spy="scroll" data-target="#toc" data-topbar-visible="true"><div id="sidebar" class="d-flex flex-column align-items-end"><div class="profile-wrapper text-center"><div id="avatar"> <a href="/" class="mx-auto"> <img src="/assets/avatar/avatar.jpg" alt="avatar" onerror="this.style.display='none'"> </a></div><div class="site-title mt-3"> <a href="/">Austin</a></div><div class="site-subtitle font-italic"> Record every seconds</div><div class="site-subtitle"> <a href="https://ghkdqhrbals.github.io/portfolios/" class="mx-auto" style="color: #ffd700"> See my portfolio </a></div></div><ul class="w-100"><li class="nav-item"> <a href="/" class="nav-link"> <i class="fa-fw fas fa-home ml-xl-3 mr-xl-3 unloaded"></i> <span>홈</span> </a><li class="nav-item"> <a href="/categories/" class="nav-link"> <i class="fa-fw fas fa-stream ml-xl-3 mr-xl-3 unloaded"></i> <span>카테고리</span> </a><li class="nav-item"> <a href="/tags/" class="nav-link"> <i class="fa-fw fas fa-tag ml-xl-3 mr-xl-3 unloaded"></i> <span>태그</span> </a><li class="nav-item"> <a href="/archives/" class="nav-link"> <i class="fa-fw fas fa-archive ml-xl-3 mr-xl-3 unloaded"></i> <span>아카이브</span> </a><li class="nav-item"> <a href="/about/" class="nav-link"> <i class="fa-fw fas fa-info-circle ml-xl-3 mr-xl-3 unloaded"></i> <span>정보</span> </a></ul><div class="sidebar-bottom mt-auto d-flex flex-wrap justify-content-center align-items-center"> <a href="https://github.com/ghkdqhrbals" aria-label="github" target="_blank" rel="noopener"> <i class="fab fa-github"></i> </a> <a href=" javascript:location.href = 'mailto:' + ['ghkdqhrbals','gmail.com'].join('@')" aria-label="email" > <i class="fas fa-envelope"></i> </a></div></div><div id="topbar-wrapper"><div id="topbar" class="container d-flex align-items-center justify-content-between h-100 pl-3 pr-3 pl-md-4 pr-md-4"> <span id="breadcrumb"> <span> <a href="/"> 홈 </a> </span> <span>실시간 채팅방 구현(9) - (단방향 DB Sync with Kafka connector)</span> </span> <i id="sidebar-trigger" class="fas fa-bars fa-fw"></i><div id="topbar-title"> 포스트</div><i id="search-trigger" class="fas fa-search fa-fw"></i> <span id="search-wrapper" class="align-items-center"> <i class="fas fa-search fa-fw"></i> <input class="form-control" id="search-input" type="search" aria-label="search" autocomplete="off" placeholder="검색..."> </span> <span id="search-cancel" >취소</span></div></div><div id="main-wrapper" class="d-flex justify-content-center"><div id="main" class="container pl-xl-4 pr-xl-4"><div class="row"><div id="core-wrapper" class="col-12 col-lg-11 col-xl-9 pr-xl-4 pb-5"><div class="post pl-1 pr-1 pl-md-2 pr-md-2"><h1 data-toc-skip>실시간 채팅방 구현(9) - (단방향 DB Sync with Kafka connector)</h1><div class="post-meta text-muted"> <span> 게시 <em class="" data-ts="1672790425" data-df="YYYY-MM-DD" data-toggle="tooltip" data-placement="bottom"> 2023-01-04 </em> </span> <span> 업데이트 <em class="" data-ts="1674980381" data-df="YYYY-MM-DD" data-toggle="tooltip" data-placement="bottom"> 2023-01-29 </em> </span><div class="d-flex justify-content-between"> <span> By <em> <a href="https://github.com/ghkdqhrbals">ghkdqhrbals</a> </em> </span><div> <span class="readtime" data-toggle="tooltip" data-placement="bottom" title="3585 단어"> <em>19 분</em>읽는 시간</span></div></div></div><div class="post-content"><h1 id="index">INDEX</h1><ol><li><a href="#1-db-sync-시-고려할점">DB sync 시 고려할점</a><li><a href="#2-어떻게-두-개의-master-db를-sync-해야할까">어떻게 두 개의 master DB를 sync 해야할까?</a><ol><li><a href="#2-1-kafka-connector란">Kafka connector란?</a><li><a href="#2-2-kafka-source-connector-setting">Kafka <strong>Source</strong> connector setting</a><ol><li>postgres wal_level 설정<li>debezium connector 설정(source)<li>connector kafka 등록(schema configuration)<li>DB에 값 추가했을 때 실제로 Kafka로 흘러가는지 확인</ol><li><a href="#2-3-kafka-sink-connector-setting">Kafka <strong>Sink</strong> connector setting</a><ol><li>postgres-kafka-source-connector 컨테이너 실행<li>jdbc-connector 설치 및 삽입<li>sink-connector configuration</ol><li><a href="#2-4-uni-directional-db-sink-결과"><strong>uni-directional DB sink</strong> 결과</a></ol></ol><p>현재 단방향까지 구현된 버전은 v3.1.0이며, 해당 코드의 다양한 버전은 아래의 깃허브에 존재한다.</p><ul><li><a href="https://github.com/ghkdqhrbals/spring-chatting-server">https://github.com/ghkdqhrbals/spring-chatting-server</a></ul><p>앞서 연동에 추가할 부분이 있다. 채팅서비스를 두개로 실행하는데, 문제는 DB가 서로 독립이라는 점이다. 따라서 두 개중, 어느 DB가 INSERT/ALTER 등이 된다면 다른 DB도 같은 트랜젝션을 수행해야한다. 즉, 분산 DB이면서 서로 sync되도록 해야된다.</p><blockquote><p>이렇게 DB를 따로 뗀 이유는 수평확장시키기 좋기 때문이다. 이러한 두 개의 DB 모두 master DB로 수행된다.</p></blockquote><h1 id="1-db-sync-시-고려할점">1. DB sync 시 고려할점</h1><p>이 부분에서 고려할 점은 다음과 같다.</p><ul><li>백업 DB처럼 단반향 sync가 아닌 양방향 sync 를 해야하기 때문에 서로 맞물리는 <strong>무한루프를 조심</strong>해야한다.<blockquote><p>보통 Source/Target DB를 정하고 CDC(Change Data Capture)후 Sync를 하는경우가 대부분이다. 양방향 sync는 좀더 까다로운것 같다. 아래는 양방향에 있어 발생가능한 이슈 및 해결방법이다.</p><p>Second, you’ll need to make sure to <strong>not propagate the same data change forth and back in an infinite loop</strong>. One way of doing so could for instance be an <strong>SMT(단일 메시지 변환) which you apply to both sources and which adds a Kafka Connect header property representing the “origin” of a given change</strong>. In your sink connector, you’d then add that origin as an additional column to your data as you update it. The source connector on that side would then have to be set up (e.g. again using an SMT) to ignore all the changes which originate from replication, as opposed to actual data changes e.g. done by a business application.</p><p>Issue from <a href="https://groups.google.com/g/debezium/c/YS22DAgFXSc">https://groups.google.com/g/debezium/c/YS22DAgFXSc</a></p></blockquote></ul><h3 id="1-1-여기서-smt란"><span class="mr-2">1-1. 여기서 SMT란?</span><a href="#1-1-여기서-smt란" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3><blockquote><p>Single Message Transforms (SMTs) is a Kafka API that provides a simple interface for manipulating records as they flow through both the source and sink side of your data pipeline.</p><p>reference <a href="https://camel.apache.org/camel-kafka-connector/3.18.x/reference/transformers/index.html">https://camel.apache.org/camel-kafka-connector/3.18.x/reference/transformers/index.html</a></p></blockquote><p>위의 레퍼런스를 번역하자면 SMTs는 <code class="language-plaintext highlighter-rouge">source connector</code> or <code class="language-plaintext highlighter-rouge">sink connector</code>에서 레코드의 칼럼명이나 value 등을 변경시켜서 전달해주는 kafka 편의기능 rest api 이다. 아래는 다양한 변환방법이다.</p><blockquote><p>Some common uses for transforms are:</p><ul><li><a href="https://docs.confluent.io/platform/current/connect/transforms/replacefield.html#replacefield">Renaming fields</a>( 칼럼명 재정의 )<li><a href="https://docs.confluent.io/platform/current/connect/transforms/maskfield.html#maskfield">Masking values</a>( 특정 칼럼의 value를 <strong>valid null</strong>로 만듬 ex) {value} to 0 or “” or false )<li>Routing records to topics based on a value( cloud 에서는 안됨 )<li><a href="https://docs.confluent.io/platform/current/connect/transforms/timestampconverter.html#timestampconverter">Converting or inserting timestamps into the record</a><li><a href="https://docs.confluent.io/platform/current/connect/transforms/valuetokey.html#description">Manipulating keys, like setting a key from a field’s value</a>( 카프카는 key를 통해 원하는 메세지를 가져올 수 있다. 이 방법은 특정 칼럼의 value를 key로 변환해주는 방법이다 )</ul><p>reference <a href="https://www.confluent.io/blog/kafka-connect-single-message-transformation-tutorial-with-examples/?_ga=2.130915337.76772118.1672804235-1001218784.1670749352&amp;_gac=1.191662808.1671423652.CjwKCAiAkfucBhBBEiwAFjbkr7Bq_5Npm8yLue-N4DKIv4hpPc44IdpcBYN3ITQzeAAdIkGX2Y5wJRoCBYIQAvD_BwE">https://www.confluent.io/blog/kafka-connect-single-message-transformation-tutorial-with-examples/?_ga=2.130915337.76772118.1672804235-1001218784.1670749352&amp;_gac=1.191662808.1671423652.CjwKCAiAkfucBhBBEiwAFjbkr7Bq_5Npm8yLue-N4DKIv4hpPc44IdpcBYN3ITQzeAAdIkGX2Y5wJRoCBYIQAvD_BwE</a></p></blockquote><h1 id="2-어떻게-두-개의-master-db를-sync-해야할까">2. 어떻게 두 개의 master DB를 sync 해야할까?</h1><p>필자는 Kafka connector을 이용하여 싱크를 맞추려한다. 그러기 위해서는 Kafka connector에 대한 이해가 바탕이 되어야한다.</p><h2 id="2-1-kafka-connector란"><span class="mr-2">2-1. Kafka connector란?</span><a href="#2-1-kafka-connector란" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2><p>Kafka connector의 기본적인 플로우는 다음과 같다. <img data-src="../../assets/img/kafka/4.png" alt="img" data-proofer-ignore></p><ol><li>RDB에 INSERT/UPDATE/ALTER 등 변경되는 트랜젝션이 실행되고 TXlog에 기록된다<li>Kafka Connector은 이를 읽고(CDC) Kafka의 Topic에 삽입한다</ol><p>이 때 이 connector을 우리는 <strong>source conenctor</strong>이라고 부른다. 그리고 <code class="language-plaintext highlighter-rouge">Kafka ---&gt; DB</code>를 연결시켜주는 connector은 <strong>sink connector</strong>이라고 부른다.</p><p>일단 먼저 Kafka source connector을 설정해보고, kafdrop으로 실제 CDC되는지 관찰해보자</p><h2 id="2-2-kafka-source-connector-setting"><span class="mr-2">2-2. Kafka <strong>Source</strong> connector setting</span><a href="#2-2-kafka-source-connector-setting" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2><p>Kafka soruce connector은 아래의 4가지 과정을 거쳐 설정 및 확인할 수 있다.</p><ol><li>postgres wal_level 설정<li>debezium connector 설정<li>connector kafka 등록<li>DB에 값 추가했을 떄 실제로 Kafka로 흘러가는지 확인</ol><h3 id="2-2-1-postgres-wal_level-설정"><span class="mr-2">2-2-1. postgres wal_level 설정</span><a href="#2-2-1-postgres-wal_level-설정" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3><ul><li>먼저 wal-level이 무엇일까?</ul><p>WAL은 Write-Ahead Logging의 약자로 <strong>트랜젝션로그에 어떤식으로 변경된 사항을 저장할 지 정하는 설정</strong>이다.</p><p>WAL은 크게 Logical과 Replica가 존재한다.</p><ul><li>Logical level : 레코드 값이 변경되면, 변경된 레코드 전체가 저장된다.<blockquote><p>예시 <a href="https://www.dbi-services.com/blog/postgresql-when-wal_level-to-logical/">wal_level = logical</a></p><div class="language-plaintext highlighter-rouge"><div class="code-header"> <span data-label-text="Plaintext"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="복사되었습니다!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre><td class="rouge-code"><pre>   lsn    | xid |                                  data
+-----------+-----+------------------------------------------------------------------------
+0/703F738 | 583 | BEGIN 583
+0/703F738 | 583 | table public.mytab: INSERT: id[integer]:3 name[character varying]:'t3'
+0/703F838 | 583 | table public.mytab: INSERT: id[integer]:4 name[character varying]:'t4'
+0/703F8A8 | 583 | COMMIT 583
+0/703F8E0 | 584 | BEGIN 584
+0/703F8E0 | 584 | table public.mytab: DELETE: (no-tuple-data)
+0/703F948 | 584 | COMMIT 584
+</pre></table></code></div></div><p>statement + row 기반으로 저장된다고 볼 수 있다.</p></blockquote><li>Replica level : 레코드 값이 변경되면, 레코드 내 변경된 값 부분만 트랜젝션 로그에 저장한다.</ul><p>그리고 이러한 WAL level은 postgres에서는 기본적으로 replica로 설정되어있다(9.4버전 이후부터 logcal을 지원한다). 이 replica level은 debezium kafka connector에서는 지원하지 않는다. 즉, 레코드 전체값이 적혀있는 트랜젝션 로그(logical level)를 보고 CDC하도록 설정되어있다. 따라서 우리는 이 default replica level을 logical로 아래와같이 바꿔줘야한다.</p><div class="language-dockerfile highlighter-rouge"><div class="code-header"> <span data-label-text="Dockerfile"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="복사되었습니다!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+</pre><td class="rouge-code"><pre>  chatting-db-1:
+    container_name: chatting-db-1
+    image: postgres:12-alpine
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=chat1
+    expose:
+      - "5433" # Publishes 5433 to other containers but NOT to host machine
+    ports:
+      - "5433:5433"
+    volumes:
+      - ./backups:/home/backups
+    command: -c wal_level=logical -p 5433 <span class="c"># logical로 변경</span>
+    restart: always
+
+  chatting-db-2:
+    container_name: chatting-db-2
+    image: postgres:12-alpine
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=chat2
+    expose:
+      - "5434" # Publishes 5433 to other containers but NOT to host machine
+    ports:
+      - "5434:5434"
+    volumes:
+      - ./backups:/home/backups
+    command: -c wal_level=logical -p 5434 <span class="c"># logical로 변경</span>
+    restart: always
+</pre></table></code></div></div><h3 id="2-2-2-debezium-connector-설정"><span class="mr-2">2-2-2. debezium connector 설정</span><a href="#2-2-2-debezium-connector-설정" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3><p>이제 DB설정은 끝났고, DB의 트랜젝션 로그의 변경사항을 관찰(CDC)하고 Kafka 토픽에 삽입해주는 connector을 컨테이너로 아래와 같이 띄울 것이다.</p><div class="language-dockerfile highlighter-rouge"><div class="code-header"> <span data-label-text="Dockerfile"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="복사되었습니다!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+</pre><td class="rouge-code"><pre>  <span class="c"># -------- postgres -&gt; kafka source connector --------</span>
+  kafka-source-connector:
+    image: debezium/connect:1.9
+    container_name: postgres-kafka-source-connector
+    ports:
+      - 8083:8083
+    environment:
+      CONFIG_STORAGE_TOPIC: my_connect_configs
+      OFFSET_STORAGE_TOPIC: my_connect_offsets
+      STATUS_STORAGE_TOPIC: my_connect_statuses
+      BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+      - zookeeper
+      - chatting-db-2
+</pre></table></code></div></div><h3 id="2-2-3-connector-kafka-등록"><span class="mr-2">2-2-3. connector kafka 등록</span><a href="#2-2-3-connector-kafka-등록" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3><p>이렇게 DB, Connector-Kafka 을 띄웠다면 이제는 서로 연결해주어야할 차례이다. 우리는 Kafka connector가 지원하는 restapi를 통해 연결시켜줄 수 있다.</p><div class="language-plaintext highlighter-rouge"><div class="code-header"> <span data-label-text="Plaintext"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="복사되었습니다!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+</pre><td class="rouge-code"><pre>POST http://localhost:8083/connectors
+{
+    "name": "source-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "plugin.name": "pgoutput",
+        "database.hostname": "chatting-db-2",
+        "database.port": "5434",
+        "database.user": "postgres",
+        "database.password": "password",
+        "database.dbname" : "chat2",
+        "database.server.name": "dbserver5434",
+        "transforms": "unwrap,addTopicPrefix",
+
+        # message의 schema를 after 필드로만 설정
+        # 이 부분을 설정하지 않는다면 source와 sink connector의 schema가 일치하지 않는다.
+        # 즉, kafka로 메세지가 흘러갈 순 있지만 kafka에서 db로 sink가 진행되지 않을것이다.
+        "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+        "transforms.addTopicPrefix.type":"org.apache.kafka.connect.transforms.RegexRouter",
+        "transforms.addTopicPrefix.regex":"(.*)",
+        "transforms.addTopicPrefix.replacement":"$1"
+    }
+}
+</pre></table></code></div></div><h3 id="2-2-4-db에-값-추가했을-때-실제로-kafka로-흘러가는지-확인"><span class="mr-2">2-2-4. DB에 값 추가했을 때 실제로 Kafka로 흘러가는지 확인</span><a href="#2-2-4-db에-값-추가했을-때-실제로-kafka로-흘러가는지-확인" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3><p>이제는 실제로 확인해 볼 차례이다. 우리는 다음과 같이 확인해볼것이다. This is final process.</p><ol><li><p>POST to server</p><div class="language-plaintext highlighter-rouge"><div class="code-header"> <span data-label-text="Plaintext"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="복사되었습니다!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre><td class="rouge-code"><pre> POST http://localhost:8080/chat/user
+ {
+   "userId":"aa",
+   "userName":"황보규민"
+ }
+</pre></table></code></div></div><li><p>In docker container log</p><div class="language-plaintext highlighter-rouge"><div class="code-header"> <span data-label-text="Plaintext"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="복사되었습니다!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre><td class="rouge-code"><pre> chatting-server-2         | 2023-01-05 05:55:07.829  INFO 1 --- [ad | producer-1] chatting.chat.web.ChatController         : 메세지 전송 성공 topic=log-user-add, offset=0, partition=2
+</pre></table></code></div></div><li><p>See kafka with Kafdrop</p><p><img data-src="../../assets/img/kafka/5.png" alt="img" data-proofer-ignore></p><p><img data-src="../../assets/img/kafka/6.png" alt="img" data-proofer-ignore></p></ol><p>아래는 발생한 에러와 해결한 방법에 대해 정리했다.</p><ul><li><p>이슈</p><div class="language-plaintext highlighter-rouge"><div class="code-header"> <span data-label-text="Plaintext"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="복사되었습니다!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre><td class="rouge-code"><pre>Connector configuration is invalid and contains the following 1 error(s) Error while validating connector config: Connection to localhost:5434 refused
+</pre></table></code></div></div><li><p>이슈 해결방법 정리 : <a href="https://github.com/ghkdqhrbals/spring-chatting-server/issues/1">https://github.com/ghkdqhrbals/spring-chatting-server/issues/1</a></p></ul><h2 id="2-3-kafka-sink-connector-setting"><span class="mr-2">2-3. Kafka <strong>Sink</strong> connector setting</span><a href="#2-3-kafka-sink-connector-setting" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2><p>자! 이제 DB-&gt;Kafka는 완료되었으니, Kafka-&gt;DB로 Sink connector을 구축해야한다. 다음의 동영상을 참고하자.</p><p><a href="https://youtu.be/2bPx3hfKX04">https://youtu.be/2bPx3hfKX04</a></p><p>위의 동영상은 confluent의 cloud로 connector을 설정하는 방법이다. 하지만 필자는 굳이 cloud로 설정할 필요없다고 생각했다. 따라서 source connector에서 사용하던 debezium connector 컨테이너에 jdbc-connector만 추가해서 사용하는 방법으로 가기로 하였다.</p><h3 id="2-3-1-postgres-kafka-source-connector-컨테이너-실행"><span class="mr-2">2-3-1. postgres-kafka-source-connector 컨테이너 실행</span><a href="#2-3-1-postgres-kafka-source-connector-컨테이너-실행" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3><div class="language-dockerfile highlighter-rouge"><div class="code-header"> <span data-label-text="Dockerfile"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="복사되었습니다!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre><td class="rouge-code"><pre>  kafka-source-connector:
+    image: debezium/connect:1.9
+    container_name: postgres-kafka-source-connector
+    ports:
+      - 8083:8083
+    environment:
+      CONFIG_STORAGE_TOPIC: __pg.source.config.storage
+      OFFSET_STORAGE_TOPIC: __pg.source.offset.storage
+      STATUS_STORAGE_TOPIC: __pg.source.status.storage
+      PLUGIN_PATH: /kafka/connect <span class="c"># connector 플러그인 저장소 위치</span>
+      BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+      - zookeeper
+      - chatting-db-1
+      - chatting-db-2
+</pre></table></code></div></div><h3 id="2-3-2-jdbc-connector-설치-및-삽입"><span class="mr-2">2-3-2. jdbc-connector 설치 및 삽입</span><a href="#2-3-2-jdbc-connector-설치-및-삽입" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3><p>아래와 같이 shell script를 작성해서 실행한다.</p><blockquote><p>해당 shell script를 실행하기 전에 먼저 <code class="language-plaintext highlighter-rouge">postgres-kafka-source-connector</code> 컨테이너가 필요하다.</p></blockquote><div class="language-shell highlighter-rouge"><div class="code-header"> <span data-label-text="Shell"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="복사되었습니다!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+</pre><td class="rouge-code"><pre><span class="c">#!/bin/bash</span>
+
+<span class="nb">echo</span> <span class="s2">"(step-1) confluent-hub cli 다운로드 및 압축해제"</span>
+curl <span class="nt">-LO</span> http://client.hub.confluent.io/confluent-hub-client-latest.tar.gz
+<span class="nb">mkdir </span>confluent-etcs | <span class="nb">tar</span> <span class="nt">-xvzf</span> confluent-hub-client-latest.tar.gz <span class="nt">-C</span> confluent-etcs
+<span class="c">#</span>
+<span class="nb">echo</span> <span class="s2">"(step-2) confluent-hub 환경변수 설정"</span>
+<span class="nb">echo</span> <span class="si">$(</span><span class="nb">pwd</span><span class="si">)</span>
+<span class="nb">export </span><span class="nv">CONFLUENT_HOME</span><span class="o">=</span><span class="si">$(</span><span class="nb">pwd</span><span class="si">)</span>/confluent-etcs
+<span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="nv">$CONFLUENT_HOME</span>/bin
+<span class="c">#</span>
+<span class="nb">echo</span> <span class="s2">"(step-3) cli를 통한 jdbc connector 다운로드"</span>
+<span class="nv">$CONFLUENT_HOME</span>/bin/confluent-hub <span class="nb">install</span> <span class="nt">--no-prompt</span> confluentinc/kafka-connect-jdbc:10.6.0 <span class="nt">--component-dir</span> <span class="si">$(</span><span class="nb">pwd</span><span class="si">)</span>/confluent-etcs
+<span class="c">#</span>
+<span class="nb">echo</span> <span class="s2">"(step-4) debezium connector 컨테이너의 connector리스트에 삽입"</span>
+docker <span class="nb">cp</span> <span class="si">$(</span><span class="nb">pwd</span><span class="si">)</span>/confluent-etcs/confluentinc-kafka-connect-jdbc postgres-kafka-source-connector:/kafka/connect
+
+<span class="nb">echo</span> <span class="s2">"(step-5) debezium connector 컨테이너 재시작으로 loading new connector"</span>
+docker restart postgres-kafka-source-connector
+</pre></table></code></div></div><p>이렇게 설치를 끝내고 <code class="language-plaintext highlighter-rouge">GET http://localhost:8083/connector-plugins</code> 을 전송하면 아래와 같이 정상적으로 JdbcSink/SourceConnector와 연동된 것을 확인할 수 있다.</p><div class="language-plaintext highlighter-rouge"><div class="code-header"> <span data-label-text="Plaintext"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="복사되었습니다!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+</pre><td class="rouge-code"><pre>[
+    {
+        "class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+        "type": "sink",
+        "version": "10.6.0"
+    },
+    {
+        "class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+        "type": "source",
+        "version": "10.6.0"
+    },
+    ...
+    {
+        "class": "io.debezium.connector.postgresql.PostgresConnector",
+        "type": "source",
+        "version": "1.9.7.Final"
+    },
+    ...
+]
+</pre></table></code></div></div><h3 id="2-3-3-sink-connector-configuration"><span class="mr-2">2-3-3. sink-connector configuration</span><a href="#2-3-3-sink-connector-configuration" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h3><div class="language-plaintext highlighter-rouge"><div class="code-header"> <span data-label-text="Plaintext"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="복사되었습니다!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+</pre><td class="rouge-code"><pre>POST http://localhost:8083/connectors
+{
+    "name": "sink-connector",
+    "config": {
+        "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+        "task.max" : 1,
+        "topics": "dbserver5434.public.user_table",
+
+        "connection.url": "jdbc:postgresql://chatting-db-1:5433/chat1",
+        "connection.user":"postgres",
+        "connection.password":"password",
+
+        # table/column 자동생성 방지
+        # 두개의 테이블이 이미 동일함
+        "auto.create": "false",
+        "auto.evolve": "false",
+        "delete.enabled": "true",
+        "insert.mode": "upsert",
+        "pk.mode": "record_key",
+        "tombstones.on.delete": "true",
+
+        # schema일치 확인 및 payload 추출 과정
+        "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "key.converter.schemas.enable": "true",
+        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "value.converter.schemas.enable": "true",
+        "transforms": "unwrap,addTopicPrefix",
+        "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+        "transforms.addTopicPrefix.type":"org.apache.kafka.connect.transforms.RegexRouter",
+        "transforms.addTopicPrefix.regex":"(.*)",
+        "transforms.addTopicPrefix.replacement":"$1",
+
+        # 해당 테이블에 new row 삽입
+        "table.name.format":"user_table",
+
+        # 몇 개의 메세지를 읽고 sink할 것인지
+        "batch.size": "1"
+    }
+}
+</pre></table></code></div></div><p>최종적으로 Kafka에서 <code class="language-plaintext highlighter-rouge">dbserver5434.public.user_table</code> 토픽에 대한 schema는 아래와 같이 설정된다.</p><div class="language-plaintext highlighter-rouge"><div class="code-header"> <span data-label-text="Plaintext"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="복사되었습니다!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+</pre><td class="rouge-code"><pre>{
+   "schema": {
+      "type": "struct",
+      "fields": [
+         {
+            "type": "string",
+            "optional": false,
+            "field": "user_id"
+         },
+         {
+            "type": "string",
+            "optional": true,
+            "field": "user_name"
+         },
+         {
+            "type": "string",
+            "optional": true,
+            "field": "user_status"
+         }
+      ],
+      "optional": false,
+      "name": "dbserver5434.public.user_table.Value"
+   },
+   "payload": {
+      "user_id": "a",
+      "user_name": "a",
+      "user_status": "a"
+   }
+}
+</pre></table></code></div></div><h2 id="2-4-uni-directional-db-sink-결과"><span class="mr-2">2-4. <strong>uni-directional DB sink</strong> 결과</span><a href="#2-4-uni-directional-db-sink-결과" class="anchor text-muted"><i class="fas fa-hashtag"></i></a></h2><p>일단 단방향 sink 설정은 이걸로 끝이 났다. 한번 확인해보자.</p><p>먼저 kafka-connector 컨테이너 실행 이후 install-jdbc-connector.sh 실행</p><div class="language-plaintext highlighter-rouge"><div class="code-header"> <span data-label-text="Plaintext"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="복사되었습니다!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+</pre><td class="rouge-code"><pre>gyuminhwangbo@Gyuminui-MacBookPro spring-chatting-server % sh ./install-jdbc-connector.sh
+
+(step-1) confluent-hub cli 다운로드 및 압축해제
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100 7584k  100 7584k    0     0  1131k      0  0:00:06  0:00:06 --:--:-- 1587k
+mkdir: confluent-etcs: File exists
+x share/doc/confluent-hub-client/notices/
+x share/doc/confluent-hub-client/licenses/
+x share/java/confluent-hub-client/jakarta.ws.rs-api-2.1.6.jar
+...
+
+(step-2) confluent-hub 환경변수 설정
+/Users/gyuminhwangbo/study/spring-chatting-server
+
+(step-3) cli를 통한 jdbc connector 다운로드
+Running in a "--no-prompt" mode
+Implicit acceptance of the license below:
+Confluent Community License
+https://www.confluent.io/confluent-community-license
+Downloading component Kafka Connect JDBC 10.6.0, provided by Confluent, Inc. from Confluent Hub and installing into /Users/gyuminhwangbo/study/spring-chatting-server/confluent-etcs
+Implicit confirmation of the question: Do you want to uninstall existing version 10.6.0?
+...
+
+(step-4) debezium connector 컨테이너의 connector리스트에 삽입
+
+(step-5) debezium connector 컨테이너 재시작으로 loading new connector
+postgres-kafka-source-connector
+</pre></table></code></div></div><p>그리고 connector configuration upload를 하였다.</p><p>아래는 DB:5434과 연결된 chatServer의 api gateway(nginx)에 user_table의 insert api를 날렸을 때 터미널 상황이다.</p><div class="language-plaintext highlighter-rouge"><div class="code-header"> <span data-label-text="Plaintext"><i class="fas fa-code small"></i></span> <button aria-label="copy" data-title-succeed="복사되었습니다!"><i class="far fa-clipboard"></i></button></div><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+</pre><td class="rouge-code"><pre># (1) kafka-connector가 postgresDB:5434의 Txlog에서 변경사항 감지(CDC)
+postgres-kafka-source-connector | 2023-01-08 07:19:07,589 INFO   Postgres|dbserver5434|streaming  First LSN 'LSN{0/168BF58}' received   [io.debezium.connector.postgresql.connection.WalPositionLocator]
+postgres-kafka-source-connector | 2023-01-08 07:19:07,589 INFO   Postgres|dbserver5434|streaming  WAL resume position 'LSN{0/168BF58}' discovered   [io.debezium.connector.postgresql.PostgresStreamingChangeEventSource]
+postgres-kafka-source-connector | 2023-01-08 07:19:07,593 INFO   Postgres|dbserver5434|streaming  Connection gracefully closed   [io.debezium.jdbc.JdbcConnection]
+postgres-kafka-source-connector | 2023-01-08 07:19:07,600 INFO   Postgres|dbserver5434|streaming  Connection gracefully closed   [io.debezium.jdbc.JdbcConnection]
+
+# (Additional) POST 반환값
+nginx                     | 192.168.240.1 - - [08/Jan/2023:07:19:07 +0000] "POST /chat/user HTTP/1.1" 200 86 "-" "PostmanRuntime/7.29.2" "-"
+
+# (2) PgOutput - postgres가 기본적으로 제공하는 replica설정을 앞서 우리가
+# logical로 바꿧었다. 그리고 logical로 저장된 TXlog들을 디코딩해서 kafka에 밀어넣기 위해
+# PgOutput이라는 모듈을 통해 logicalTX----(decoding-PgOutput)----&gt;kafka를 수행한다.
+postgres-kafka-source-connector | 2023-01-08 07:19:07,614 INFO   Postgres|dbserver5434|streaming  Initializing PgOutput logical decoder publication   [io.debezium.connector.postgresql.connection.PostgresReplicationConnection]
+chatting-db-2             | 2023-01-08 07:19:07.620 UTC [82] LOG:  starting logical decoding for slot "debezium"
+chatting-db-2             | 2023-01-08 07:19:07.620 UTC [82] DETAIL:  Streaming transactions committing after 0/168BDD8, reading WAL from 0/168BDD8.
+chatting-db-2             | 2023-01-08 07:19:07.620 UTC [82] STATEMENT:  START_REPLICATION SLOT "debezium" LOGICAL 0/168BDD8 ("proto_version" '1', "publication_names" 'dbz_publication')
+chatting-db-2             | 2023-01-08 07:19:07.620 UTC [82] LOG:  logical decoding found consistent point at 0/168BDD8
+chatting-db-2             | 2023-01-08 07:19:07.620 UTC [82] DETAIL:  There are no running transactions.
+chatting-db-2             | 2023-01-08 07:19:07.620 UTC [82] STATEMENT:  START_REPLICATION SLOT "debezium" LOGICAL 0/168BDD8 ("proto_version" '1', "publication_names" 'dbz_publication')
+postgres-kafka-source-connector | 2023-01-08 07:19:07,636 INFO   Postgres|dbserver5434|streaming  Requested thread factory for connector PostgresConnector, id = dbserver5434 named = keep-alive   [io.debezium.util.Threads]
+postgres-kafka-source-connector | 2023-01-08 07:19:07,637 INFO   Postgres|dbserver5434|streaming  Creating thread debezium-postgresconnector-dbserver5434-keep-alive   [io.debezium.util.Threads]
+postgres-kafka-source-connector | 2023-01-08 07:19:07,638 INFO   Postgres|dbserver5434|streaming  Processing messages   [io.debezium.connector.postgresql.PostgresStreamingChangeEventSource]
+postgres-kafka-source-connector | 2023-01-08 07:19:07,654 INFO   Postgres|dbserver5434|streaming  Message with LSN 'LSN{0/168BF58}' arrived, switching off the filtering   [io.debezium.connector.postgresql.connection.WalPositionLocator]
+postgres-kafka-source-connector | 2023-01-08 07:19:08,264 INFO   ||  1 records sent during previous 00:01:18.579, last recorded offset: {transaction_id=null, lsn_proc=23641944, lsn=23641944, txId=501, ts_usec=1673162347279067}   [io.debezium.connector.common.BaseSourceTask]
+
+# (Additional) 이건 그냥 별개로 connector 안거치고 바로 kafka에 삽입하는 별도의 pipeline.
+chatting-server-2         | 2023-01-08 07:19:07.806  INFO 1 --- [ad | producer-1] chatting.chat.web.ChatController         : 메세지 전송 성공 topic=log-user-add, offset=0, partition=1
+
+# (3) JDBC-Sink connector가 kafka-topic의 소비된 message의 last offset을 확인하고,
+# 신규 데이터 발견, postgresql에 대한 dialect를 만들어서 쿼리를 실행시키는 과정
+postgres-kafka-source-connector | 2023-01-08 07:19:08,287 INFO   ||  [Producer clientId=connector-producer-source-connector-0] Resetting the last seen epoch of partition dbserver5434.public.user_table-0 to 0 since the associated topicId changed from null to oCJqYdENQ1C2cPZeNEhtsw   [org.apache.kafka.clients.Metadata]
+postgres-kafka-source-connector | 2023-01-08 07:19:08,313 INFO   ||  Attempting to open connection #1 to PostgreSql   [io.confluent.connect.jdbc.util.CachedConnectionProvider]
+postgres-kafka-source-connector | 2023-01-08 07:19:08,412 INFO   ||  Maximum table name length for database is 63 bytes   [io.confluent.connect.jdbc.dialect.PostgreSqlDatabaseDialect]
+postgres-kafka-source-connector | 2023-01-08 07:19:08,412 INFO   ||  JdbcDbWriter Connected   [io.confluent.connect.jdbc.sink.JdbcDbWriter]
+postgres-kafka-source-connector | 2023-01-08 07:19:08,430 INFO   ||  Checking PostgreSql dialect for existence of TABLE "user_table"   [io.confluent.connect.jdbc.dialect.GenericDatabaseDialect]
+postgres-kafka-source-connector | 2023-01-08 07:19:08,440 INFO   ||  Using PostgreSql dialect TABLE "user_table" present   [io.confluent.connect.jdbc.dialect.GenericDatabaseDialect]
+postgres-kafka-source-connector | 2023-01-08 07:19:08,456 INFO   ||  Checking PostgreSql dialect for type of TABLE "user_table"   [io.confluent.connect.jdbc.dialect.GenericDatabaseDialect]
+postgres-kafka-source-connector | 2023-01-08 07:19:08,460 INFO   ||  Setting metadata for table "user_table" to Table{name='"user_table"', type=TABLE columns=[Column{'user_name', isPrimaryKey=false, allowsNull=true, sqlType=varchar}, Column{'user_id', isPrimaryKey=true, allowsNull=false, sqlType=varchar}, Column{'user_status', isPrimaryKey=false, allowsNull=true, sqlType=varchar}]}   [io.confluent.connect.jdbc.util.TableDefinitions]
+</pre></table></code></div></div><p>드디어! 단방향 설정이 끝났다. 이제는 양방향이 남았다. 포스팅이 너무 길어져서 양방향 설계는 다음 포스팅에서 설계하겠다. 아래는 고려하는 양방향 DB sync의 아키텍처이다.</p><p><img data-src="../../assets/img/kafka/7.jpg" alt="img" data-proofer-ignore></p><h1 id="reference">Reference</h1><ul><li><a href="https://www.confluent.io/blog/sync-databases-and-remove-silos-with-kafka-cdc/">https://www.confluent.io/blog/sync-databases-and-remove-silos-with-kafka-cdc/</a><li><a href="https://dbconvert.com/blog/what-is-database-synchronization/">One way DB sync</a><li><a href="https://dbconvert.com/blog/bidirectional-database-synchronization/">Bi-directional DB sync</a><li><a href="https://medium.com/event-driven-utopia/configuring-debezium-to-capture-postgresql-changes-with-docker-compose-224742ca5372">https://medium.com/event-driven-utopia/configuring-debezium-to-capture-postgresql-changes-with-docker-compose-224742ca5372</a><li><a href="https://stackoverflow.com/questions/59978213/debezium-could-not-access-file-decoderbufs-using-postgres-11-with-default-plug">https://stackoverflow.com/questions/59978213/debezium-could-not-access-file-decoderbufs-using-postgres-11-with-default-plug</a><li><a href="https://debezium.io/documentation/reference/stable/connectors/postgresql.html">source connector configuration 문법 with debezium Postgres connector</a><li><a href="https://blog.devgenius.io/change-data-capture-from-mysql-to-postgresql-using-kafka-connect-and-debezium-ae8740ef3a1d">Debezium을 이용 source/sink connector 설정</a></ul></div><div class="post-tail-wrapper text-muted"><div class="post-meta mb-3"> <i class="far fa-folder-open fa-fw mr-1"></i> <a href='/categories/%EC%B1%84%ED%8C%85%EC%84%9C%EB%B2%84-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8/'>채팅서버 프로젝트</a>, <a href='/categories/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EC%A7%84%ED%96%89/'>프로젝트 진행</a></div><div class="post-tail-bottom d-flex justify-content-between align-items-center mt-3 pt-5 pb-2"><div class="license-wrapper"> 이 기사는 저작권자의 <a href="https://creativecommons.org/licenses/by/4.0/"> CC BY 4.0 </a> 라이센스를 따릅니다.</div><div class="share-wrapper"> <span class="share-label text-muted mr-1">공유하기</span> <span class="share-icons"> <a href="https://twitter.com/intent/tweet?text=%EC%8B%A4%EC%8B%9C%EA%B0%84+%EC%B1%84%ED%8C%85%EB%B0%A9+%EA%B5%AC%ED%98%84%289%29+-+%28%EB%8B%A8%EB%B0%A9%ED%96%A5+DB+Sync+with+Kafka+connector%29+-+Austin&url=%2Fposts%2Fchatting%289%29%2F" data-toggle="tooltip" data-placement="top" title="Twitter" target="_blank" rel="noopener" aria-label="Twitter"> <i class="fa-fw fab fa-twitter"></i> </a> <a href="https://www.facebook.com/sharer/sharer.php?title=%EC%8B%A4%EC%8B%9C%EA%B0%84+%EC%B1%84%ED%8C%85%EB%B0%A9+%EA%B5%AC%ED%98%84%289%29+-+%28%EB%8B%A8%EB%B0%A9%ED%96%A5+DB+Sync+with+Kafka+connector%29+-+Austin&u=%2Fposts%2Fchatting%289%29%2F" data-toggle="tooltip" data-placement="top" title="Facebook" target="_blank" rel="noopener" aria-label="Facebook"> <i class="fa-fw fab fa-facebook-square"></i> </a> <a href="https://t.me/share/url?url=%2Fposts%2Fchatting%289%29%2F&text=%EC%8B%A4%EC%8B%9C%EA%B0%84+%EC%B1%84%ED%8C%85%EB%B0%A9+%EA%B5%AC%ED%98%84%289%29+-+%28%EB%8B%A8%EB%B0%A9%ED%96%A5+DB+Sync+with+Kafka+connector%29+-+Austin" data-toggle="tooltip" data-placement="top" title="Telegram" target="_blank" rel="noopener" aria-label="Telegram"> <i class="fa-fw fab fa-telegram"></i> </a> <i id="copy-link" class="fa-fw fas fa-link small" data-toggle="tooltip" data-placement="top" title="링크 복사하기" data-title-succeed="링크가 복사되었습니다!"> </i> </span></div></div></div></div></div><div id="panel-wrapper" class="col-xl-3 pl-2 text-muted"><div class="access"><div id="access-tags"><div class="panel-heading">인기 태그</div><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <a class="post-tag" href="/tags/cs-information/">CS information</a> <a class="post-tag" href="/tags/golang/">golang</a> <a class="post-tag" href="/tags/backend/">backend</a> <a class="post-tag" href="/tags/error/">error</a> <a class="post-tag" href="/tags/ethereum/">Ethereum</a> <a class="post-tag" href="/tags/msa/">msa</a> <a class="post-tag" href="/tags/network/">Network</a> <a class="post-tag" href="/tags/restful/">RESTFUL</a> <a class="post-tag" href="/tags/token/">token</a> <a class="post-tag" href="/tags/database/">database</a></div></div></div><script src="https://cdn.jsdelivr.net/gh/afeld/bootstrap-toc@1.0.1/dist/bootstrap-toc.min.js"></script><div id="toc-wrapper" class="pl-0 pr-4 mb-5"><div class="panel-heading pl-3 pt-2 mb-2">바로가기</div><nav id="toc" data-toggle="toc"></nav></div></div></div><div class="row"><div id="tail-wrapper" class="col-12 col-lg-11 col-xl-9 pl-3 pr-3 pr-xl-4"><div id="related-posts" class="mb-2 mb-sm-4"><h3 class="pt-2 mb-4 ml-1" data-toc-skip>관련된 글</h3><div class="card-deck mb-4"><div class="card"> <a href="/posts/chatting(10)/"><div class="card-body"> <em class="small" data-ts="1673136025" data-df="YYYY-MM-DD" > 2023-01-08 </em><h3 class="pt-0 mt-1 mb-3" data-toc-skip>실시간 채팅방 구현(10) - (양방향 DB Sync 구현의 어려움 + 비용)</h3><div class="text-muted small"><p> 서론 단방향까지는 구현이 가능했었는데, 양방향(BDR)은 아래의 이유로 굉장히 까다로웠다. 컨셉만 존재할 뿐, 코드 레퍼런스가 없다. 현업자분들께 방향성을 여쭙고싶다. 두 개의 마스터 노드일 때는 그래도 할 순 있겠지만, 그 이상일 때는 각각을 전부다 설정해줘야하기때문에 상당히 까다롭다. ...</p></div></div></a></div><div class="card"> <a href="/posts/chatting(11)/"><div class="card-body"> <em class="small" data-ts="1673740825" data-df="YYYY-MM-DD" > 2023-01-15 </em><h3 class="pt-0 mt-1 mb-3" data-toc-skip>실시간 채팅방 구현(11) - (대량 Rest api test 코드)</h3><div class="text-muted small"><p> 현재까지 auth/chat Server 및 여러 장애대응과 모니터링 서비스를 구축했다. 서비스관련 테스트 코드는 이미 생성하였으며, 이제는 다량의 Rest api 트래픽을 테스트를 위한 클라이언트를 제작해 볼 차례이다. 아래의 코드는 Golang으로 제작하였다. 예상되는 아래의 질문에 대한 답변을 준비해봤다. Question : 왜 Java...</p></div></div></a></div><div class="card"> <a href="/posts/chatting(12)/"><div class="card-body"> <em class="small" data-ts="1673740825" data-df="YYYY-MM-DD" > 2023-01-15 </em><h3 class="pt-0 mt-1 mb-3" data-toc-skip>실시간 채팅방 구현(12) - (대량 Rest api test 한계 돌파)</h3><div class="text-muted small"><p> INDEX 랜덤값으로 test하는 code 10000개 rest api 트래픽 실행(110초 소요) 이제 동시 연결가능한 TCP 소켓을 필자의 맥북이 버틸 수 있는만큼 열어서 다량의 http request를 서버로 전송해볼려고 한다. 1 2 3 4 5 6 7 8 9 10 t := http.DefaultTransport.(*http.Tr...</p></div></div></a></div></div></div><div class="post-navigation d-flex justify-content-between"> <a href="/posts/chatting(8)/" class="btn btn-outline-primary" prompt="이전 글"><p>실시간 채팅방 구현(8) - (Kafka + Spring + ELK Stack 연동완료)</p></a> <a href="/posts/chatting(10)/" class="btn btn-outline-primary" prompt="다음 글"><p>실시간 채팅방 구현(10) - (양방향 DB Sync 구현의 어려움 + 비용)</p></a></div></div></div></div><div id="search-result-wrapper" class="d-flex justify-content-center unloaded"><div class="col-12 col-sm-11 post-content"><div id="search-hints"><div id="access-tags"><div class="panel-heading">인기 태그</div><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <a class="post-tag" href="/tags/cs-information/">CS information</a> <a class="post-tag" href="/tags/golang/">golang</a> <a class="post-tag" href="/tags/backend/">backend</a> <a class="post-tag" href="/tags/error/">error</a> <a class="post-tag" href="/tags/ethereum/">Ethereum</a> <a class="post-tag" href="/tags/msa/">msa</a> <a class="post-tag" href="/tags/network/">Network</a> <a class="post-tag" href="/tags/restful/">RESTFUL</a> <a class="post-tag" href="/tags/token/">token</a> <a class="post-tag" href="/tags/database/">database</a></div></div></div><div id="search-results" class="d-flex flex-wrap justify-content-center text-muted mt-3"></div></div></div></div><footer><div class="container pl-lg-4 pr-lg-4"><div class="d-flex justify-content-between align-items-center text-muted ml-md-3 mr-md-3"><div class="footer-left"><p class="mb-0"> © 2023 <a href="https://github.com/ghkdqhrbals">ghkdqhrbals</a>. <span data-toggle="tooltip" data-placement="top" title="명시되지 않는 한 이 사이트의 블로그 게시물은 작성자의 Creative Commons Attribution 4.0 International(CC BY 4.0) 라이선스에 따라 사용이 허가되었습니다.">일부 권리 보유</span></p></div><div class="footer-right"><p class="mb-0"> Powered by <a href="https://jekyllrb.com" target="_blank" rel="noopener">Jekyll</a> with <a href="https://github.com/cotes2020/jekyll-theme-chirpy" target="_blank" rel="noopener">Chirpy</a> theme.</p></div></div></div></footer><div id="mask"></div><a id="back-to-top" href="#" aria-label="back-to-top" class="btn btn-lg btn-box-shadow" role="button"> <i class="fas fa-angle-up"></i> </a><div id="notification" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-animation="true" data-autohide="false"><div class="toast-header"> <button type="button" class="ml-2 ml-auto close" data-dismiss="toast" aria-label="Close"> <span aria-hidden="true">&times;</span> </button></div><div class="toast-body text-center pt-0"><p class="pl-2 pr-2 mb-3">새 버전의 콘텐츠를 사용할 수 있습니다.</p><button type="button" class="btn btn-primary" aria-label="Update"> 업데이트 </button></div></div><script src="https://cdn.jsdelivr.net/npm/simple-jekyll-search@1.10.0/dest/simple-jekyll-search.min.js"></script> <script> SimpleJekyllSearch({ searchInput: document.getElementById('search-input'), resultsContainer: document.getElementById('search-results'), json: '/assets/js/data/search.json', searchResultTemplate: '<div class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-lg-4 pr-lg-4 pl-xl-0 pr-xl-0"> <a href="{url}">{title}</a><div class="post-meta d-flex flex-column flex-sm-row text-muted mt-1 mb-1"> {categories} {tags}</div><p>{snippet}</p></div>', noResultsText: '<p class="mt-5">검색 결과가 없습니다.</p>', templateMiddleware: function(prop, value, template) { if (prop === 'categories') { if (value === '') { return `${value}`; } else { return `<div class="mr-sm-4"><i class="far fa-folder fa-fw"></i>${value}</div>`; } } if (prop === 'tags') { if (value === '') { return `${value}`; } else { return `<div><i class="fa fa-tag fa-fw"></i>${value}</div>`; } } } }); </script> <script src="https://cdn.jsdelivr.net/combine/npm/magnific-popup@1/dist/jquery.magnific-popup.min.js,npm/lozad/dist/lozad.min.js,npm/clipboard@2/dist/clipboard.min.js"></script> <script src="https://cdn.jsdelivr.net/combine/npm/dayjs@1/dayjs.min.js,npm/dayjs@1/locale/ko.min.js,npm/dayjs@1/plugin/relativeTime.min.js,npm/dayjs@1/plugin/localizedFormat.min.js"></script> <script defer src="/assets/js/dist/post.min.js"></script> <script src="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/js/bootstrap.bundle.min.js"></script> <script defer src="/app.js"></script> <script defer src="https://www.googletagmanager.com/gtag/js?id=G-VTR1DF5BPL"></script> <script> document.addEventListener("DOMContentLoaded", function(event) { window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-VTR1DF5BPL'); }); </script>
