@@ -3,7 +3,6 @@
 */
 
 @import "colors/light-syntax";
-@import "colors/dark-syntax";
 
 html {
   @media (prefers-color-scheme: light) {
@@ -11,17 +10,10 @@ html {
     &[data-mode=light] {
       @include light-syntax;
     }
-
-    &[data-mode=dark] {
-      @include dark-syntax;
-    }
   }
 
   @media (prefers-color-scheme: dark) {
     &:not([data-mode]),
-    &[data-mode=dark] {
-      @include dark-syntax;
-    }
 
     &[data-mode=light] {
       @include light-syntax;
